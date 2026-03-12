@@ -7,11 +7,22 @@ bwrap directly seemed too low-level, and also I couldn't set resource limits on 
 
 ## Install
 
+### Download binary
+
+```bash
+curl -Lo isolate.tar.gz https://github.com/Shadi/isolate/releases/download/v1.0/isolate-linux-amd64.tar.gz
+tar xzf isolate.tar.gz
+sudo mv isolate /usr/local/bin/
+```
+### From source
+
 ```bash
 go install github.com/shadi/isolate/cmd/isolate@latest
 ```
 
-Requires `bwrap` and `systemd-run` on the host.
+### Requirements
+
+`bwrap` and `systemd-run` must be available on the host.
 
 ## Usage
 
