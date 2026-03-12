@@ -12,6 +12,11 @@ bwrap directly seemed too low-level, and also I couldn't set resource limits on 
 ```bash
 curl -Lo isolate.tar.gz https://github.com/Shadi/isolate/releases/download/v1.0/isolate-linux-amd64.tar.gz
 tar xzf isolate.tar.gz
+
+# either use directly
+./isolate --help
+
+# or install system-wide
 sudo mv isolate /usr/local/bin/
 ```
 ### From source
