@@ -10,6 +10,7 @@ type Config struct {
 	NoNetwork  bool     // disable networking
 	Bare       bool     // skip all default system mounts
 	FullEtc    bool     // mount all of /etc instead of safe subset
+	MountCwd   bool     // auto-mount current working directory
 	WorkingDir string
 	Env        []string
 }

@@ -1,8 +1,18 @@
 package sandbox
 
 import (
+	"os"
 	"testing"
 )
+
+func mustBuildBwrapArgs(t *testing.T, cfg *Config) []string {
+	t.Helper()
+	args, err := BuildBwrapArgs(cfg)
+	if err != nil {
+		t.Fatalf("BuildBwrapArgs() error: %v", err)
+	}
+	return args
+}
 
 func TestBuildBwrapArgs(t *testing.T) {
 	tests := []struct {
@@ -56,7 +66,7 @@ func TestBuildBwrapArgs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := BuildBwrapArgs(&tt.cfg)
+			got := mustBuildBwrapArgs(t, &tt.cfg)
 			if !containsSubsequence(got, tt.want) {
 				t.Errorf("BuildBwrapArgs() = %v, want subsequence %v", got, tt.want)
 			}
@@ -69,7 +79,7 @@ func TestBuildBwrapArgs_commandAtEnd(t *testing.T) {
 		Command: "/usr/bin/myapp",
 		Args:    []string{"--flag", "value"},
 	}
-	args := BuildBwrapArgs(&cfg)
+	args := mustBuildBwrapArgs(t, &cfg)
 
 	separatorIdx := -1
 	for i, a := range args {
@@ -92,7 +102,7 @@ func TestBuildBwrapArgs_bare(t *testing.T) {
 		Command: "/myapp",
 		Bare:    true,
 	}
-	args := BuildBwrapArgs(&cfg)
+	args := mustBuildBwrapArgs(t, &cfg)
 
 	for _, banned := range []string{"/usr", "/etc", "/proc", "/dev", "/tmp"} {
 		if containsElement(args, banned) {
@@ -107,7 +117,7 @@ func TestBuildBwrapArgs_bare(t *testing.T) {
 
 func TestBuildBwrapArgs_defaultMountsPresent(t *testing.T) {
 	cfg := Config{Command: "/bin/echo"}
-	args := BuildBwrapArgs(&cfg)
+	args := mustBuildBwrapArgs(t, &cfg)
 
 	for _, expected := range []string{"/usr", "/proc", "/dev", "/tmp"} {
 		if !containsElement(args, expected) {
@@ -118,7 +128,7 @@ func TestBuildBwrapArgs_defaultMountsPresent(t *testing.T) {
 
 func TestBuildBwrapArgs_defaultSafeEtc(t *testing.T) {
 	cfg := Config{Command: "/bin/echo"}
-	args := BuildBwrapArgs(&cfg)
+	args := mustBuildBwrapArgs(t, &cfg)
 
 	// Safe /etc paths should be present
 	safePaths := []string{
@@ -152,7 +162,7 @@ func TestBuildBwrapArgs_fullEtc(t *testing.T) {
 		Command: "/bin/echo",
 		FullEtc: true,
 	}
-	args := BuildBwrapArgs(&cfg)
+	args := mustBuildBwrapArgs(t, &cfg)
 
 	// Full /etc should be mounted
 	if !containsSubsequence(args, []string{"--ro-bind", "/etc", "/etc"}) {
@@ -166,9 +176,70 @@ func TestBuildBwrapArgs_bareIgnoresFullEtc(t *testing.T) {
 		Bare:    true,
 		FullEtc: true,
 	}
-	args := BuildBwrapArgs(&cfg)
+	args := mustBuildBwrapArgs(t, &cfg)
 
 	if containsElement(args, "/etc") {
 		t.Errorf("bare mode should override full-etc, got args %v", args)
+	}
+}
+
+func TestBuildBwrapArgs_mountCwd(t *testing.T) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("os.Getwd() error: %v", err)
+	}
+
+	cfg := Config{
+		Command:  "/bin/ls",
+		MountCwd: true,
+	}
+	args := mustBuildBwrapArgs(t, &cfg)
+
+	if !containsSubsequence(args, []string{"--bind", cwd, cwd}) {
+		t.Errorf("mount-cwd should bind cwd %s, got args %v", cwd, args)
+	}
+	if !containsSubsequence(args, []string{"--chdir", cwd}) {
+		t.Errorf("mount-cwd should set chdir to %s, got args %v", cwd, args)
+	}
+}
+
+func TestBuildBwrapArgs_mountCwdWithExplicitWorkdir(t *testing.T) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("os.Getwd() error: %v", err)
+	}
+
+	cfg := Config{
+		Command:    "/bin/ls",
+		MountCwd:   true,
+		WorkingDir: "/somewhere",
+	}
+	args := mustBuildBwrapArgs(t, &cfg)
+
+	// Should still mount cwd
+	if !containsSubsequence(args, []string{"--bind", cwd, cwd}) {
+		t.Errorf("mount-cwd should bind cwd %s, got args %v", cwd, args)
+	}
+	// Should use explicit workdir, not cwd
+	if !containsSubsequence(args, []string{"--chdir", "/somewhere"}) {
+		t.Errorf("explicit workdir should win, got args %v", args)
+	}
+}
+
+func TestBuildBwrapArgs_noMountCwd(t *testing.T) {
+	cwd, _ := os.Getwd()
+
+	cfg := Config{
+		Command:  "/bin/ls",
+		MountCwd: false,
+	}
+	args := mustBuildBwrapArgs(t, &cfg)
+
+	// cwd should not appear as a bind mount
+	for i, a := range args {
+		if a == cwd && i > 0 && (args[i-1] == "--bind" || args[i-1] == "--ro-bind") {
+			t.Errorf("mount-cwd=false should not mount cwd, got args %v", args)
+			break
+		}
 	}
 }

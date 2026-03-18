@@ -41,7 +41,11 @@ func (s *Sandbox) buildArgs() ([]string, error) {
 		return nil, err
 	}
 
-	bwrapCmd := append([]string{"bwrap"}, BuildBwrapArgs(s.cfg)...)
+	bwrapArgs, err := BuildBwrapArgs(s.cfg)
+	if err != nil {
+		return nil, err
+	}
+	bwrapCmd := append([]string{"bwrap"}, bwrapArgs...)
 
 	if prefix != nil {
 		return append(prefix, bwrapCmd...), nil

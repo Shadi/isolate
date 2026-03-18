@@ -1,5 +1,10 @@
 package sandbox
 
+import (
+	"fmt"
+	"os"
+)
+
 // mount represents a single bwrap mount directive.
 type mount struct {
 	flag   string // e.g. "--ro-bind", "--symlink", "--proc", "--tmpfs", "--ro-bind-try"
@@ -55,7 +60,7 @@ func appendMounts(args []string, mounts []mount) []string {
 }
 
 // BuildBwrapArgs constructs the argument list for bwrap.
-func BuildBwrapArgs(cfg *Config) []string {
+func BuildBwrapArgs(cfg *Config) ([]string, error) {
 	var args []string
 
 	if !cfg.Bare {
@@ -78,6 +83,17 @@ func BuildBwrapArgs(cfg *Config) []string {
 		args = append(args, "--unshare-net")
 	}
 
+	if cfg.MountCwd {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return nil, fmt.Errorf("getting current directory: %w", err)
+		}
+		args = append(args, "--bind", cwd, cwd)
+		if cfg.WorkingDir == "" {
+			args = append(args, "--chdir", cwd)
+		}
+	}
+
 	for _, v := range cfg.Volumes {
 		if v.ReadOnly {
 			args = append(args, "--ro-bind", v.Source, v.Target)
@@ -94,5 +110,5 @@ func BuildBwrapArgs(cfg *Config) []string {
 	args = append(args, cfg.Command)
 	args = append(args, cfg.Args...)
 
-	return args
+	return args, nil
 }

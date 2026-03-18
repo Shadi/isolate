@@ -57,6 +57,7 @@ func parseFlags(args []string) (*sandbox.Config, error) {
 	noNetwork := fs.Bool("no-network", false, "Disable network access")
 	bare := fs.Bool("bare", false, "Skip all default system mounts")
 	fullEtc := fs.Bool("full-etc", false, "Mount all of /etc (includes secrets; default mounts only safe paths)")
+	mountCwd := fs.Bool("mount-cwd", true, "Mount current working directory into sandbox (use --mount-cwd=false to disable)")
 	workDir := fs.String("workdir", "", "Working directory inside sandbox")
 
 	fs.SetInterspersed(false)
@@ -78,6 +79,7 @@ func parseFlags(args []string) (*sandbox.Config, error) {
 		NoNetwork:  *noNetwork,
 		Bare:       *bare,
 		FullEtc:    *fullEtc,
+		MountCwd:   *mountCwd,
 		WorkingDir: *workDir,
 	}
 
