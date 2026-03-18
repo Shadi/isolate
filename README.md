@@ -10,7 +10,7 @@ bwrap directly seemed too low-level, and also I couldn't set resource limits on 
 ### Download binary
 
 ```bash
-curl -Lo isolate.tar.gz https://github.com/Shadi/isolate/releases/download/v1.0/isolate-linux-amd64.tar.gz
+curl -Lo isolate.tar.gz https://github.com/Shadi/isolate/releases/download/v1.1.0/isolate-linux-amd64.tar.gz
 tar xzf isolate.tar.gz
 
 # either use directly
@@ -42,6 +42,7 @@ isolate [flags] command [args...]
 | `--max-memory` | Memory limit using k8s format (`256Mi`, `1Gi`, `512M`) — enforced via cgroups |
 | `--max-cpu` | CPU limit in cores or millicores (`1`, `0.5`, `500m`) — enforced via cgroups |
 | `-v`, `--volume` | Bind mount as `target:source[:ro]` (repeatable) |
+| `--mount-cwd` | Auto-mount current directory into sandbox (default: `true`, disable with `--mount-cwd=false`) |
 | `--no-network` | Disable network access |
 | `--full-etc` | Mount all of `/etc` (default only mounts safe paths like `resolv.conf`, `ssl/`, `hosts`) |
 | `--bare` | Skip all default mounts — you control everything via `--volume` |
@@ -49,14 +50,19 @@ isolate [flags] command [args...]
 
 ## Examples
 
-Run a command with memory and CPU limits:
+Run a command in the current directory (auto-mounted by default):
 ```bash
-isolate --max-memory 256Mi --max-cpu 2 -v /app:/home/user/myproject /usr/bin/python3 train.py
+isolate /usr/bin/python3 train.py
 ```
 
-Mount a directory and restrict network:
+Run with memory and CPU limits:
 ```bash
-isolate --no-network -v /app:/home/user/myproject /bin/ls /app
+isolate --max-memory 256Mi --max-cpu 2 /usr/bin/python3 train.py
+```
+
+Mount an additional directory and restrict network:
+```bash
+isolate --no-network -v /data:/mnt/datasets /bin/ls
 ```
 
 Full `/etc` access (exposes secrets — use only when needed):
@@ -73,6 +79,7 @@ isolate --bare -v /usr:/usr:ro -v /app:/home/user/code /usr/bin/myapp
 
 Unless `--bare` is set, the sandbox includes:
 
+- Current working directory (read-write, same path inside sandbox)
 - `/usr` (read-only), `/lib`, `/bin`, `/sbin` (symlinks into `/usr`)
 - `/proc`, `/dev`, `/tmp`
 - Safe `/etc` subset: `resolv.conf`, `ssl/`, `ca-certificates/`, `ld.so.*`, `nsswitch.conf`, `localtime`, `hosts`
