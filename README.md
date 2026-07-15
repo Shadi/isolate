@@ -26,6 +26,10 @@ sudo mv isolate /usr/local/bin/
 go install github.com/shadi/isolate/cmd/isolate@latest
 ```
 
+### Requirements
+
+`bwrap` and `systemd-run` must be available on the host.
+
 ## Quick Start
 
 ```bash
@@ -39,10 +43,6 @@ add an alias to .bashrc:
 alias iclaude='isolate -v "$HOME/.local:$HOME/.local:ro" -v "$HOME/.claude:$HOME/.claude" -v "$HOME/.claude.json:$HOME/.claude.json" claude'
 
 ```
-
-### Requirements
-
-`bwrap` and `systemd-run` must be available on the host.
 
 ## Usage
 
