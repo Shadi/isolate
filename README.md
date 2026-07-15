@@ -19,10 +19,25 @@ tar xzf isolate.tar.gz
 # or install system-wide
 sudo mv isolate /usr/local/bin/
 ```
+
 ### From source
 
 ```bash
 go install github.com/shadi/isolate/cmd/isolate@latest
+```
+
+## Quick Start
+
+```bash
+go install github.com/shadi/isolate/cmd/isolate@latest
+isolate -v "$HOME/.local:$HOME/.local:ro" -v "$HOME/.claude:$HOME/.claude" -v "$HOME/.claude.json:$HOME/.claude.json" claude
+```
+
+add an alias to .bashrc:
+
+```bash
+alias iclaude='isolate -v "$HOME/.local:$HOME/.local:ro" -v "$HOME/.claude:$HOME/.claude" -v "$HOME/.claude.json:$HOME/.claude.json" claude'
+
 ```
 
 ### Requirements
@@ -51,26 +66,31 @@ isolate [flags] command [args...]
 ## Examples
 
 Run a command in the current directory (auto-mounted by default):
+
 ```bash
 isolate /usr/bin/python3 train.py
 ```
 
 Run with memory and CPU limits:
+
 ```bash
 isolate --max-memory 256Mi --max-cpu 2 /usr/bin/python3 train.py
 ```
 
 Mount an additional directory and restrict network:
+
 ```bash
 isolate --no-network -v /data:/mnt/datasets /bin/ls
 ```
 
 Full `/etc` access (exposes secrets — use only when needed):
+
 ```bash
 isolate --full-etc /usr/bin/curl https://example.com
 ```
 
 Bare mode with manual mounts:
+
 ```bash
 isolate --bare -v /usr:/usr:ro -v /app:/home/user/code /usr/bin/myapp
 ```
